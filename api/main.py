@@ -6,6 +6,7 @@ from typing import Optional
 
 from interface import Interface
 from bgp import BGP
+from route import Route
 
 
 tags_metadata = [
@@ -20,6 +21,10 @@ tags_metadata = [
     {
         "name": "BGP Neighbors",
         "description": "Manage BGP Neighbors",
+    },
+    {
+        "name": "Routes",
+        "description": "Manage IP Routes",
     },
 ]
 
@@ -42,6 +47,10 @@ class InterfaceItems(BaseModel):
 class BGPNeighborsItems(BaseModel):
     ip: str
     as_number: str
+
+class IPRoutesItems(BaseModel):
+    network: str
+    next_hop: str
 
 @app.get("/interfaces/", tags=["Interfaces"])
 async def get_interfaces():
@@ -80,4 +89,21 @@ async def create_bgp_neighbors(item: BGPNeighborsItems):
 async def delete_bgp_neighbors(neighbor_ip):
     bgp = BGP()
     response = bgp.delete_bgp_neighbor(neighbor_ip)
+    return(JSONResponse(status_code=response["code"], content=response["result"]))
+
+@app.get("/ip-routes/", tags=["Routes"])
+async def get_ip_routes():
+    route = Route()
+    return(route.get_ip_routes())
+
+@app.post("/ip-routes/", tags=["Routes"])
+async def create_ip_route(item: IPRoutesItems):
+    route = Route()
+    response = route.set_ip_route(item.network, item.next_hop)
+    return(JSONResponse(status_code=response["code"], content=response["result"]))
+
+@app.delete("/ip-routes/", tags=["Routes"])
+async def delete_ip_route(item: IPRoutesItems):
+    route = Route()
+    response = route.delete_ip_route(item.network, item.next_hop)
     return(JSONResponse(status_code=response["code"], content=response["result"]))
