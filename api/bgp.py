@@ -22,15 +22,19 @@ class BGP:
         if not self.bgp_neighbor_exists(peer_address):
             local_as = self.get_local_as()
             if local_as:
+                if not self.bgp_peer_group_exists("v4"):
+                    self.create_peer_group(local_as)
                 vtysh_command = '''
                 conf t
                 router bgp %s
                 neighbor %s remote-as %s
                 neighbor %s peer-group v4
+                neighbor %s ebgp-multihop 10
+                neighbor %s disable-connected-check
                 exit
                 exit
                 write
-                ''' % (local_as, peer_address, remote_as, peer_address)
+                ''' % (local_as, peer_address, remote_as, peer_address, peer_address, peer_address)
                 vtysh_command_result = self.exec_set_vty_command(vtysh_command)
                 if vtysh_command_result == "OK":
                     self.return_value["code"] = 201
@@ -85,11 +89,38 @@ class BGP:
         if "localAS" in bgp_configuration:
             as_number = bgp_configuration["localAS"]
         return as_number
+    
+    def create_peer_group(self, local_as):
+        vtysh_command = '''
+        conf t
+        router bgp %s
+        neighbor v4 peer-group
+        address-family ipv4 unicast
+        neighbor v4 route-map IMPORT in
+        neighbor v4 route-map EXPORT out
+        neighbor v4 attribute-unchanged next-hop
+        exit
+        exit
+        exit
+        write
+        ''' % (local_as)
+        vtysh_command_result = self.exec_set_vty_command(vtysh_command)
+        return vtysh_command_result
 
     def bgp_neighbor_exists(self, address):
         bgp_neighbor_list = self.get_bgp_neighbors()
         for key in bgp_neighbor_list:
             if key == address:
+                return True
+        return False
+    
+    def bgp_peer_group_exists(self, peer_group_name):
+        vtysh_command = '''
+        show bgp peer-group json
+        '''
+        peer_group_list = self.exec_get_vty_command(vtysh_command)
+        for key in peer_group_list:
+            if key == peer_group_name:
                 return True
         return False
     
