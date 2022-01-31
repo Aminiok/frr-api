@@ -44,10 +44,15 @@ RUN yum install -y /pkgs/rpm/*/*.rpm \
 RUN mkdir -p /var/run/frr
 RUN chown -R frr:frr /etc/frr /var/run/frr
 
-RUN /usr/bin/yum --assumeyes install epel-release gcc
-RUN /usr/bin/pip3 install Flask flask-cors nltk requests 
+RUN /usr/bin/yum --assumeyes install epel-release gcc openssl-devel bzip2-devel libffi-devel zlib-devel -y
+RUN /usr/bin/curl https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz --output Python-3.9.9.tgz && tar xzf Python-3.9.9.tgz && cd Python-3.9.9 && ./configure --enable-optimizations && yum install make -y && make altinstall
+RUN curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py && python3.9 get-pip.py
+RUN pip install fastapi gunicorn uvicorn uvloop httptools 
 RUN mkdir /api/
-COPY api/* /api/
+COPY api/* /api/ 
+COPY api/run.sh / 
+COPY api/daemons /etc/frr/ 
+COPY api/frr.conf /etc/frr/
 
 # Add tini because no CentOS7 package
 ENV TINI_VERSION v0.19.0
