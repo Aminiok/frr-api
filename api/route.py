@@ -1,5 +1,6 @@
 import json
 import subprocess
+from bgp import BGP
 
 class Route:
     return_value = {"code": 0, "result": ""}
@@ -13,15 +14,18 @@ class Route:
         return(json.loads(self.exec_get_vty_command(vtysh_command)))
     
     def set_ip_route(self, network, next_hop):
+        bgp = BGP()
         if not self.ip_route_exists(network):
             vtysh_command = '''
             conf t
             ip route %s %s
+            ip prefix-list EXPORT permit %s
             exit
             write
-            ''' % (network, next_hop)
+            ''' % (network, next_hop, network)
             vtysh_command_result = self.exec_set_vty_command(vtysh_command)
             if vtysh_command_result == "OK":
+                bgp.restart_bgp_export_rules()
                 self.return_value["code"] = 201
                 self.return_value["result"] = "IP route %s %s created." % (network, next_hop)
             else:
@@ -37,9 +41,10 @@ class Route:
             vtysh_command = '''
             conf t
             no ip route %s %s
+            no ip prefix-list EXPORT permit %s
             exit
             write
-            ''' % (network, next_hop)
+            ''' % (network, next_hop, network)
             vtysh_command_result = self.exec_set_vty_command(vtysh_command)
             if vtysh_command_result == "OK":
                 self.return_value["code"] = 410

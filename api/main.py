@@ -1,13 +1,11 @@
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-
 from pydantic import BaseModel
 from typing import Optional
-
+from baseModelItem import InterfaceItems, BGPNeighborsItems, IPRoutesItems
 from interface import Interface
 from bgp import BGP
 from route import Route
-
 
 tags_metadata = [
     {
@@ -38,19 +36,6 @@ app = FastAPI(
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     }
 )
-
-class InterfaceItems(BaseModel):
-    name: str
-    description: Optional[str] = None
-    ip: str
-
-class BGPNeighborsItems(BaseModel):
-    ip: str
-    as_number: str
-
-class IPRoutesItems(BaseModel):
-    network: str
-    next_hop: str
 
 @app.get("/interfaces/", tags=["Interfaces"])
 async def get_interfaces():
